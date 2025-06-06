@@ -1,0 +1,6 @@
+.git
+*.md
+test/
+*.mmdb
+*.log
+data/
