@@ -33,22 +33,3 @@ jobs:
           goversion: 1.24
           binary_name: "geocn"
           extra_files: README.md
-      - name: Build and Push Multi-Arch Docker Image
-        if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            luola/geocn-go:latest
-            luola/geocn-go:${{ github.ref_name }}
-          cache-from: type=registry,ref=luola/geocn-go:cache
-          cache-to: type=inline
-      - name: Upload Release Asset (Binary)
-        if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
-        uses: softprops/action-gh-release@v1
-        with:
-          files: geocn
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
