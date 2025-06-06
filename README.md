@@ -1,5 +1,7 @@
 # GeoCN-Go
 
+[![Docker Image Build](https://github.com/luolayo/geocn/actions/workflows/release.yml/badge.svg)](https://github.com/luolayo/geocn/actions/workflows/release.yml)
+
 🌐 **GeoCN-Go** is a lightweight IP-to-location REST API server written in Go. It combines [MaxMind GeoLite2](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) with [GeoCN](https://github.com/ljxi/GeoCN) to provide precise geographic and ISP data, including Chinese province, city, district, network type, and ASN information.
 
 ---
