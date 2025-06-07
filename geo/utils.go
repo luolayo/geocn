@@ -61,3 +61,30 @@ func simplifyRegions(list []string) []string {
 func ensureDataDir() {
 	_ = os.MkdirAll("data", 0o755)
 }
+
+func ReloadDatabases() {
+	newCityDB, _ := maxminddb.Open("data/GeoLite2-City.mmdb")
+	newASNDB, _ := maxminddb.Open("data/GeoLite2-ASN.mmdb")
+	newCNDB, _ := maxminddb.Open("data/GeoCN.mmdb")
+
+	// 关闭旧 reader
+	if old := cityDB.Swap(newCityDB); old != nil {
+		err := old.(*maxminddb.Reader).Close()
+		if err != nil {
+			return
+		}
+	}
+	if old := asnDB.Swap(newASNDB); old != nil {
+		err := old.(*maxminddb.Reader).Close()
+		if err != nil {
+			return
+		}
+	}
+	if old := cnDB.Swap(newCNDB); old != nil {
+		old.(*maxminddb.Reader).Close()
+	}
+}
+
+func GetReaders() (*maxminddb.Reader, *maxminddb.Reader, *maxminddb.Reader) {
+	return cityDB.Load().(*maxminddb.Reader), asnDB.Load().(*maxminddb.Reader), cnDB.Load().(*maxminddb.Reader)
+}

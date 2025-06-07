@@ -2,6 +2,7 @@ package updater
 
 import (
 	"fmt"
+	"github.com/luolayo/geocn-go/geo"
 	"github.com/luolayo/geocn-go/logger"
 	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
@@ -32,7 +33,10 @@ var Downloads = []struct {
 func StartDailyUpdater() {
 	c := cron.New()
 	// 每天0点执行
-	_, err := c.AddFunc("0 0 * * *", updateAll)
+	_, err := c.AddFunc("0 0 * * *", func() {
+		updateAll()
+		geo.ReloadDatabases()
+	})
 	if err != nil {
 		logger.Error(err.Error())
 		return
@@ -40,7 +44,7 @@ func StartDailyUpdater() {
 
 	// 立即执行一次，避免首次为空
 	updateAll()
-
+	geo.ReloadDatabases()
 	c.Start()
 }
 

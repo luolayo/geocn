@@ -2,6 +2,7 @@ package geo
 
 import (
 	"net"
+	"sync/atomic"
 
 	"github.com/oschwald/maxminddb-golang"
 )
@@ -61,6 +62,12 @@ var asnMap = map[uint]string{
 	55960:  "亚马逊云", 14618: "亚马逊云", 16509: "亚马逊云",
 	15169: "谷歌云", 396982: "谷歌云", 36492: "谷歌云",
 }
+
+var (
+	cityDB atomic.Value // 线程安全读写
+	asnDB  atomic.Value
+	cnDB   atomic.Value
+)
 
 // IPToAddress converts an IP string to structured info.
 // It mirrors the original Python behaviour but in Go.

@@ -14,7 +14,6 @@ import (
 	"github.com/luolayo/geocn-go/geo"
 	"github.com/luolayo/geocn-go/logger"
 	"github.com/luolayo/geocn-go/updater"
-	"github.com/oschwald/maxminddb-golang"
 )
 
 func main() {
@@ -25,35 +24,6 @@ func main() {
 
 	listen := flag.String("http", ":8080", "HTTP listen address")
 	flag.Parse()
-
-	// open databases from ./data directory (created by updater)
-	cityDB := geo.MustOpen("data/GeoLite2-City.mmdb")
-	defer func(cityDB *maxminddb.Reader) {
-		err := cityDB.Close()
-		if err != nil {
-			logger.S().Errorf("Failed to close city DB: %v", err)
-		} else {
-			logger.S().Info("City DB closed successfully")
-		}
-	}(cityDB)
-	asnDB := geo.MustOpen("data/GeoLite2-ASN.mmdb")
-	defer func(asnDB *maxminddb.Reader) {
-		err := asnDB.Close()
-		if err != nil {
-			logger.S().Errorf("Failed to close ASN DB: %v", err)
-		} else {
-			logger.S().Info("ASN DB closed successfully")
-		}
-	}(asnDB)
-	cnDB := geo.MustOpen("data/GeoCN.mmdb")
-	defer func(cnDB *maxminddb.Reader) {
-		err := cnDB.Close()
-		if err != nil {
-			logger.S().Errorf("Failed to close CN DB: %v", err)
-		} else {
-			logger.S().Info("CN DB closed successfully")
-		}
-	}(cnDB)
 
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
@@ -69,11 +39,13 @@ func main() {
 	})
 	r.GET("/:ip", func(c *gin.Context) {
 		ip := c.Param("ip")
+		cityDB, asnDB, cnDB := geo.GetReaders()
 		res := geo.IPToAddress(ip, cityDB, asnDB, cnDB)
 		c.JSON(200, res)
 	})
 	r.GET("/", func(c *gin.Context) {
 		ip := c.ClientIP()
+		cityDB, asnDB, cnDB := geo.GetReaders()
 		res := geo.IPToAddress(ip, cityDB, asnDB, cnDB)
 		c.JSON(200, res)
 	})
