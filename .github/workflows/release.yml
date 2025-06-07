@@ -1,9 +1,10 @@
-name: Release and Docker Push
+name: Release
 
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
   release:
@@ -11,33 +12,74 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.24'
 
-      - name: Extract Tag
-        id: get_tag
-        run: echo "TAG_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
+      - name: Set tag variable
+        id: vars
+        run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
-      - name: Create GitHub Release
+      # 编译多平台 Go 二进制
+      - name: Build binaries
+        run: |
+          mkdir release
+          # linux/amd64
+          GOOS=linux GOARCH=amd64 go build -o release/geocn-linux-amd64
+          tar czvf release/geocn-linux-amd64.tar.gz -C release geocn-linux-amd64
+          # linux/arm64
+          GOOS=linux GOARCH=arm64 go build -o release/geocn-linux-arm64
+          tar czvf release/geocn-linux-arm64.tar.gz -C release geocn-linux-arm64
+          # darwin/amd64
+          GOOS=darwin GOARCH=amd64 go build -o release/geocn-darwin-amd64
+          tar czvf release/geocn-darwin-amd64.tar.gz -C release geocn-darwin-amd64
+          # darwin/arm64
+          GOOS=darwin GOARCH=arm64 go build -o release/geocn-darwin-arm64
+          tar czvf release/geocn-darwin-arm64.tar.gz -C release geocn-darwin-arm64
+          # windows/amd64
+          GOOS=windows GOARCH=amd64 go build -o release/geocn-windows-amd64.exe
+          tar czvf release/geocn-windows-amd64.tar.gz -C release geocn-windows-amd64.exe
+          # 你也可以继续加更多平台
+          # 添加文档
+          cp README.md release/
+
+      # 创建 Release 并上传所有二进制文件
+      - name: Create GitHub Release and Upload Assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.TAG_NAME }}
+          tag_name: ${{ env.TAG }}
+          files: |
+            release/geocn-linux-amd64.tar.gz
+            release/geocn-linux-arm64.tar.gz
+            release/geocn-darwin-amd64.tar.gz
+            release/geocn-darwin-arm64.tar.gz
+            release/geocn-windows-amd64.tar.gz
+            release/README.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 多平台 Docker 镜像部分
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          username: luola
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build and Push Docker image (multi-platform)
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/your-image-name:${{ env.TAG_NAME }}
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            luola/geocn:${{ env.TAG }}
+            luola/geocn:latest
